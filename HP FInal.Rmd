@@ -951,7 +951,7 @@ SpellCountByChapter<-SpellCountByCharacter %>%
   summarise('CastsPerChapter'=n())%>%
   mutate(CumulativeCasts = cumsum(CastsPerChapter)) %>% 
   group_by(Spell) %>% 
-  filter(sum(CastsPerChapter)>2 && n_distinct(Chapter.ID)>1)
+  filter(n_distinct(Chapter.ID)>1)
 
 SpellCountByChapter %>% 
   ggplot(aes(x=Chapter.ID,y=CumulativeCasts))+
@@ -1129,3 +1129,8 @@ Limitations:
 - Data completeness: Some characters in the series have more detailed documentation than others
 - Context limitation: The analysis cannot account for application of spells (mention vs incantation)
 
+## Fun Data:
+
+- Ron is pretty useless when it comes to magic!(Kinda already knew that)
+- Slytherin has the most half-bloods by percentage.(Very weird)
+- We don't see anyone from hufflepuff cast a spell in any of the movies!
