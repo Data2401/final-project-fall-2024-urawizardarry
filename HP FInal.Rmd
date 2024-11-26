@@ -48,8 +48,19 @@ Places <- read.csv("HPDatasets/Places.csv")
 Spells <- read.csv("HPDatasets/Spells.csv")
 ```
 
+---
 
 # House Dynamics
+
+This analysis explores the characteristics and demographics of different Hogwarts houses and magical schools using the Characters dataset. We examine several key variables including:
+
+- House affiliation (Gryffindor, Slytherin, Ravenclaw, Hufflepuff, Beauxbatons, Durmstrang)
+- Gender distribution within houses
+- Blood status diversity (Pure-blood, Half-blood, Muggle-born, etc.)
+- Physical characteristics (Hair color, Eye color)
+- Magical abilities (Patronus forms)
+
+---
 
 ### Distribution of Characters Across Hogwarts Houses
 ```{r message = FALSE, warning = FALSE}
@@ -85,6 +96,8 @@ Characters %>% # main data frame containing character information
         legend.text = element_text(size = 8))  # legend text size
 ```
 
+--- 
+
 
 ### Gender Distribution
 ```{r}
@@ -118,9 +131,10 @@ ggplot(Gender.Distribution, aes(x = House,
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-### Blood Status Diversity
 
-```{r}
+
+### Blood Status Diversity
+```{r message = FALSE, warning = FALSE}
 # Filter and prepare data, excluding NA and empty values
 Blood.Status <- Characters %>%
   filter(!is.na(House) & House != "" & 
@@ -128,18 +142,26 @@ Blood.Status <- Characters %>%
   mutate(House = case_when(
     House == "Beauxbatons Academy of Magic" ~ "Beauxbatons",
     House == "Durmstrang Institute" ~ "Durmstrang",
-    TRUE ~ House ))
+    TRUE ~ House
+  ))
 
-ggplot(Blood.Status, aes(x = House, fill = Blood.Status)) +
-  geom_bar(position = "fill") +
-  geom_text(aes(label = after_stat(count)), 
-            position = position_fill(vjust = 0.5),
-            stat = "count", 
+# Calculate percentages
+Blood.Status.Percentages <- Blood.Status %>%
+  group_by(House, Blood.Status) %>%
+  summarise(count = n()) %>%
+  group_by(House) %>%
+  mutate(percentage = round((count / sum(count)) * 100, 1))
+
+# Create visualization
+ggplot(Blood.Status.Percentages, aes(x = House, y = percentage, fill = Blood.Status)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.1f%%", percentage)), 
+            position = position_stack(vjust = 0.5),
             color = "white", 
             size = 3) +
   labs(title = "Blood Status Distribution Across Houses",
        x = "House",
-       y = "Proportion",
+       y = "Percentage",
        fill = "Blood Status") +
   scale_fill_manual(values = c(
     "Pure-Blood" = "#4A0404",     # Dark red
@@ -157,8 +179,11 @@ ggplot(Blood.Status, aes(x = House, fill = Blood.Status)) +
   )
 ```
 
-### Hair Color
-```{r warning=FALSE}
+
+---
+
+### Physical Characteristics
+```{r message = FALSE, warning = FALSE}
 # Filter and prepare data for hair color analysis
 Hair.Color.Distribution <- Characters %>%
   filter(!is.na(House) & House != "" & 
@@ -210,7 +235,6 @@ ggplot(Hair.Color.Percentages, aes(x = House, y = percentage, fill = Hair.Color)
   )
 ```
 
-### Eye Color
 ```{r}
 # Filter and prepare data for eye color analysis
 Eye.Color.Distribution <- Characters %>%
@@ -254,6 +278,8 @@ ggplot(Eye.Color.Distribution, aes(x = reorder(Eye.Color, Percentage), y = Perce
   ) +
   scale_y_continuous(limits = c(0, max(Eye.Color.Distribution$Percentage) * 1.2))
 ```
+
+---
 
 ### Patronus Forms
 ```{r}
@@ -304,9 +330,27 @@ ggplot(House.Patronus, aes(x = House, fill = Patronus)) +
 ```
 
 
+---
 
 # Dialogue Analysis
-### Frequently used words
+To analyze dialogue patterns across the Harry Potter movie series, we examined the following datasets:
+
+- Dialogue.csv: Contains character dialogue lines with Character.ID and Chapter.ID
+- Characters.csv: Provides character details including House affiliation
+- Chapters.csv: Links dialogues to specific movie chapters
+- Movies.csv: Contains movie titles and chronological information
+
+Key variables analyzed include:
+
+- Individual dialogue lines and their frequency
+- Distribution of dialogue across Houses
+- Speaking patterns of main characters (Golden Trio)
+- Common words and phrases used throughout the series
+
+---
+
+### Frequently Used Words
+
 ```{r message=FALSE, warning=FALSE}
 library(RColorBrewer)
 library(tidytext)
@@ -329,6 +373,7 @@ wordcloud(words = word_counts$word,
           colors = brewer.pal(8, "Dark2"))
 ```
 
+
 ```{r message=FALSE, warning=FALSE}
 # Create frequency table of most common words
 Word.Freq.Table <- Dialogue %>%
@@ -349,6 +394,9 @@ kable(Word.Freq.Table,
 ```
 
 
+
+---
+
 ### Locations with Most Dialogue
 ```{r}
 # Count dialogues per location
@@ -364,7 +412,8 @@ TopLocations <- Dialogue.Count %>%
 
 # Visualize top 10 locations with most dialogue
 ggplot(TopLocations, aes(x = reorder(Place.Name, Dialogue_Count), y = Dialogue_Count)) +
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity",
+           fill = "#2A623D") +
   coord_flip() +
   theme_minimal() +
   labs(title = "Top 10 Locations with Most Dialogue",
@@ -374,9 +423,9 @@ ggplot(TopLocations, aes(x = reorder(Place.Name, Dialogue_Count), y = Dialogue_C
 ```
 
 
+---
 
 ### Representation of Different Houses in Dialogue Across the Movie Series
-
 ```{r}
 # Join Characters and Dialogue tables to get house information for each dialogue
 House.Dialogue <- Dialogue %>%
@@ -429,7 +478,6 @@ ggplot(House.Representation,
   )) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 
 
@@ -440,10 +488,10 @@ House.Summary <- House.Dialogue %>%
   left_join(Movies, by = "Movie.ID") %>%
   group_by(House) %>%
   summarise(
-    Total_Lines = n(),
+    Total.Lines = n(),
     Percentage = round(n() / nrow(House.Dialogue) * 100, 1)
   ) %>%
-  arrange(desc(Total_Lines))
+  arrange(desc(Total.Lines))
 
 # Display table using kable
 kable(House.Summary,
@@ -451,6 +499,147 @@ kable(House.Summary,
       caption = "Overall House Representation in Dialogue") %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
+
+
+---
+
+### Golden Trio Dialogue Distribution
+```{r warning=FALSE, message=FALSE}
+# Analyze dialogue distribution for main characters across movies
+main_char_dialogue <- Dialogue %>%
+  left_join(Characters, by = "Character.ID") %>%
+  left_join(Chapters, by = "Chapter.ID") %>%
+  left_join(Movies, by = "Movie.ID") %>%
+  filter(Character.Name %in% c("Harry Potter", "Ron Weasley", "Hermione Granger")) %>%
+  group_by(Movie.Title, Character.Name) %>%
+  summarise(Dialogue_Count = n(), .groups = 'drop') %>%
+  mutate(Movie.Short = case_when(
+    Movie.Title == "Harry Potter and the Philosopher's Stone" ~ "HP 1",
+    Movie.Title == "Harry Potter and the Chamber of Secrets" ~ "HP 2",
+    Movie.Title == "Harry Potter and the Prisoner of Azkaban" ~ "HP 3",
+    Movie.Title == "Harry Potter and the Goblet of Fire" ~ "HP 4",
+    Movie.Title == "Harry Potter and the Order of the Phoenix" ~ "HP 5",
+    Movie.Title == "Harry Potter and the Half-Blood Prince" ~ "HP 6",
+    Movie.Title == "Harry Potter and the Deathly Hallows Part 1" ~ "HP 7.1",
+    Movie.Title == "Harry Potter and the Deathly Hallows Part 2" ~ "HP 7.2"
+  ))
+
+# Create visualization
+ggplot(main_char_dialogue, 
+       aes(x = Movie.Short, 
+           y = Dialogue_Count, 
+           color = Character.Name,
+           group = Character.Name)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  labs(title = "Golden Trio Dialogue Distribution Across Movies",
+       x = "Movie",
+       y = "Number of Dialogue Lines") +
+  scale_color_manual(values = c(
+    "Harry Potter" = "#740001",
+    "Ron Weasley" = "#CD7F32",
+    "Hermione Granger" = "#964B00"
+  )) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.title = element_blank()
+  )
+```
+
+
+
+---
+
+# Spell Analysis
+
+---
+
+# Wand Analysis
+To analyze wand characteristics and their distribution across the Harry Potter universe, we examined the following datasets:
+
+- Characters.csv: Contains wand details including wood type, core, and length
+
+Key variables analyzed include:
+
+- Wand length (measured in inches)
+- Wand wood type (e.g., Holly, Oak, Vine)
+- Wand core material (e.g., Phoenix feather, Dragon heartstring)
+- Character house affiliation
+
+---
+
+### Distribution of Wands Across Houses
+```{r}
+# Create wand count analysis by house
+Wand.House.Count <- Characters %>%
+  filter(!is.na(House) & House != "" & !is.na(Wand..Wood.) & Wand..Wood. != "") %>%
+  mutate(House = case_when(
+    House == "Beauxbatons Academy of Magic" ~ "Beauxbatons",
+    House == "Durmstrang Institute" ~ "Durmstrang",
+    TRUE ~ House
+  )) %>%
+  group_by(House) %>%
+  summarise(
+    Wand_Count = n(),
+    Percentage = round(n() / nrow(Characters) * 100, 1)
+  ) %>%
+  arrange(desc(Wand_Count))
+
+# Create bar plot with adjusted text position
+ggplot(Wand.House.Count, aes(x = reorder(House, -Wand_Count), y = Wand_Count, fill = House)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(Wand_Count, "\n(", Percentage, "%)"), 
+            y = Wand_Count + max(Wand_Count) * 0.05), # Position text above bars
+            position = position_dodge(width = 0.9),
+            vjust = 0) +
+  labs(title = "Distribution of Wands Across Houses",
+       x = "House",
+       y = "Number of Wands") +
+  scale_fill_manual(values = c(
+    "Gryffindor" = "#740001",
+    "Slytherin" = "#1A472A",
+    "Ravenclaw" = "#0E1A40",
+    "Hufflepuff" = "#FFD800",
+    "Beauxbatons" = "#87CEEB",
+    "Durmstrang" = "#DC143C"
+  )) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  ) +
+  # Expand y-axis to make room for labels
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2)))
+```
+
+---
+
+### Wand Length Distribution by Wood Type and Core
+```{r}
+# Create faceted scatter plot for wand characteristics
+Wand.Analysis <- Characters %>%
+  filter(!is.na(Wand..Length.) & !is.na(Wand..Core.) & !is.na(Wand..Wood.) & 
+         Wand..Core. != "" & Wand..Wood. != "") %>%
+  mutate(Wand..Core. = factor(Wand..Core.),
+         Wand..Wood. = factor(Wand..Wood.))
+
+# Create the visualization
+ggplot(Wand.Analysis, aes(x = Wand..Wood., y = Wand..Length., color = Wand..Core.)) +
+  geom_point(position = position_jitter(width = 0.2), alpha = 0.6) +
+  labs(title = "Wand Length Distribution by Wood Type and Core",
+       x = "Wood Type",
+       y = "Length (inches)",
+       color = "Wand Core") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.text = element_text(size = 8),
+    legend.position = "bottom"
+  ) +
+  scale_color_brewer(palette = "Set2")
+```
+
 
 
 
