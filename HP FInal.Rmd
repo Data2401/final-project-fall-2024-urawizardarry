@@ -1,17 +1,16 @@
 ---
 title: "Spells and Spreadsheets: Decoding the Wizarding World with Data Science"
 author: "Viviana Lara, Justin Cline"
-output: html_document
+output: slidy_presentation
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-# Introduction
+## Introduction
 
-In the realm of fantasy literature and cinema, few franchises have captured the imagination quite like Harry Potter. But beyond the spellbinding narratives lies a wealth of data waiting to be explored. Our analysis aims to uncover the hidden patterns and insights within the Harry Potter movie series, using a comprehensive dataset that spans characters, dialogue, spells, potions, and movie statistics.
+In the realm of fantasy literature and cinema, few franchises have captured the imagination quite like Harry Potter. But beyond the spellbinding narratives lies a wealth of data waiting to be explored. Our analysis aims to uncover the hidden patterns and insights within the Harry Potter movie series, using a comprehensive dataset that spans characters, dialogue, spells, and movie statistics.
 
 The central question we seek to answer is: How do the various elements of the Harry Potter universe interact and evolve throughout the series? To address this, we'll be diving into multiple CSV files, including:
 
@@ -27,6 +26,28 @@ By analyzing this rich dataset, we aim to reveal trends in character development
 ---
 
 # About the Dataset
+## Data Sources
+
+The datasets used in this analysis come from two main sources (Kaggle):
+
+1. [Harry Potter Movies Dataset](https://www.kaggle.com/datasets/maricinnamon/harry-potter-movies-dataset) - Contains detailed movie scripts and dialogue information
+2. [Harry Potter Dataset](https://www.kaggle.com/datasets/gulsahdemiryurek/harry-potter-dataset) - Provides comprehensive character attributes and demographics
+
+## Tools
+
+Our analysis uses various R packages to process and visualize the data:
+
+- **dplyr** - For efficient data manipulation and transformation
+- **ggplot2** - For creating sophisticated visualizations of character demographics and dialogue patterns
+- **kableExtra** - For creating formatted tables with additional styling options
+- **knitr** - For generating dynamic reports and tables
+- **RColorBrewer** - For consistent and visually appealing color schemes
+- **stringr** - For string manipulation and text processing
+- **tidyr** - For cleaning and restructuring data into tidy format
+- **tidytext** - For text analysis and processing of dialogue
+- **wordcloud** - For visualizing word frequencies in dialogue
+
+
 ```{r message = FALSE, warning = FALSE}
 # Loading Required Libraries
 library(dplyr)
@@ -35,9 +56,21 @@ library(ggplot2) # Needed for plotting data
 library(stringr) # Needed for the str_detect() function to manipulate our dataset
 library(knitr)      # for kable function
 library(kableExtra) # for kable_styling
+library(RColorBrewer) # For color schemes
+library(tidytext) # for text analysis and processing of dialogue
+library(wordcloud) # for word frequencies
 ```
 
-```{r message = FALSE}
+
+Through statistical analysis and data visualization, we explore several key aspects:
+
+1. Demographics and characteristics of different Hogwarts houses
+2. Character attribute distributions (blood status, physical traits, magical abilities)
+3. Dialogue patterns and language use throughout the series
+
+This analysis will provide fans, researchers, and storytellers with quantitative insights into the intricate world of Harry Potter, revealing patterns that might not be immediately apparent through casual viewing or reading.
+
+```{r message = FALSE, warning=FALSE}
 # Reading the Datasets
 Chapters <- read.csv("HPDatasets/Chapters.csv")
 Characters <- read.csv("HPDatasets/Characters.csv")
@@ -46,9 +79,13 @@ Movies <- read.csv("HPDatasets/Movies.csv")
 Dialogue <- read.csv("HPDatasets/Dialogue.csv")
 Places <- read.csv("HPDatasets/Places.csv")
 Spells <- read.csv("HPDatasets/Spells.csv")
+
+glimpse(Spells)
+glimpse(Places)
+glimpse(Dialogue)
 ```
 
----
+ 
 
 # House Dynamics
 
@@ -63,6 +100,16 @@ This analysis explores the characteristics and demographics of different Hogwart
 ---
 
 ### Distribution of Characters Across Hogwarts Houses
+
+The main houses and schools in the Harry Potter universe include:
+
+- **Gryffindor:** Known for bravery, daring, nerve, and chivalry. Associated with the lion and the colors scarlet and gold.
+- **Slytherin:** Values ambition, cunning, leadership, and resourcefulness. Represented by the serpent with colors green and silver.
+- **Ravenclaw:** Prizes wit, learning, wisdom, and intellect. Symbolized by the eagle with blue and bronze colors.
+- **Hufflepuff:** Emphasizes hard work, dedication, patience, and loyalty. Represented by the badger with yellow and black colors.
+- **Beauxbatons:** A French magical academy known for elegance and refinement. 
+- **Durmstrang:** A Northern European institution famous for its emphasis on martial magic and physical prowess.
+
 ```{r message = FALSE, warning = FALSE}
 Characters %>% # main data frame containing character information
   filter(!is.na(House) & House != "") %>%  # filter out characters without a house and NA
@@ -92,14 +139,47 @@ Characters %>% # main data frame containing character information
                               "Hufflepuff" = "#FFD800",
                               "Beauxbatons Academy of Magic" = "#87CEEB",
                               "Durmstrang Institute" = "#DC143C")) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), # ajust x-axis labels
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), # adjust x-axis labels
         legend.text = element_text(size = 8))  # legend text size
 ```
 
---- 
 
+---  
 
 ### Gender Distribution
+```{r}
+# Calculate overall gender distribution
+Gender.Overall <- Characters %>%
+  filter(!is.na(Gender)) %>%
+  group_by(Gender) %>%
+  summarise(
+    Count = n(),
+    Percentage = round(n() / nrow(filter(Characters, !is.na(Gender))) * 100, 1)
+  ) %>%
+  arrange(desc(Percentage))
+
+# Create pie chart
+ggplot(Gender.Overall, aes(x = "", y = Percentage, fill = Gender)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = sprintf("%.1f%%", Percentage)),
+            position = position_stack(vjust = 0.5)) +
+  labs(title = "Overall Gender Distribution",
+       x = NULL,
+       y = NULL) +
+  scale_fill_manual(values = c(
+    "Female" = "#FF69B4",
+    "Male" = "#4169E1"
+  )) +
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank()
+  )
+```
+
+
 ```{r}
 Gender.Distribution <- Characters %>%
   filter(!is.na(House) & House != "" & !is.na(Gender)) %>%
@@ -131,9 +211,65 @@ ggplot(Gender.Distribution, aes(x = House,
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-
+---
 
 ### Blood Status Diversity
+
+In the Harry Potter universe, there are several distinct blood statuses:
+
+- **Pure-Blood:** Wizards and witches from families with exclusively magical heritage for many generations
+- **Half-Blood:** Those with both magical and non-magical ancestry in their recent family history
+- **Muggle-Born:** Magical individuals born to non-magical (Muggle) parents
+- **Half-Giant:** Individuals with one giant parent and one human parent
+- **Quarter-Veela:** Those with one grandparent who was a Veela (magical beings known for their beauty)
+- **Goblin:** Members of the goblin race, known for their exceptional skill with metals and banking
+- **Part-Goblin:** Characters with some goblin ancestry in their family line
+- **Squib:** People born to magical parents but lacking magical abilities themselves
+- **House-Elf:** Magical creatures bound to serve wizarding households and institutions
+
+```{r}
+# Calculate overall blood status distribution
+Blood.Status.Overall <- Characters %>%
+  filter(!is.na(Blood.Status) & Blood.Status != "") %>%
+  group_by(Blood.Status) %>%
+  summarise(
+    Count = n(),
+    Percentage = round(n() / nrow(filter(Characters, !is.na(Blood.Status) & Blood.Status != "")) * 100, 1)
+  ) %>%
+  arrange(desc(Percentage))
+
+# Create bar plot
+ggplot(Blood.Status.Overall, aes(x = reorder(Blood.Status, Percentage), 
+                                y = Percentage, 
+                                fill = Blood.Status)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.1f%%", Percentage)), 
+            hjust = -0.1) +
+  coord_flip() +
+  labs(title = "Overall Distribution of Blood Status",
+       x = "Blood Status",
+       y = "Percentage") +
+  scale_fill_manual(values = c(
+    "Pure-Blood" = "#4A0404",
+    "Half-Blood" = "#000080",
+    "Muggle-Born" = "#FFB347",
+    "Half-Giant" = "#848482",
+    "Quarter-Veela" = "#87CEEB",
+    "Part-Goblin" = "#2F4F4F",
+    "Muggle" = "#DC143C",
+    "Goblin" = "#228B22",
+    "Squib" = "#5c4939",
+    "Elf" = "#946B2D"
+  )) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.major.y = element_blank()
+  ) +
+  scale_y_continuous(limits = c(0, max(Blood.Status.Overall$Percentage) * 1.2))
+```
+
+
 ```{r message = FALSE, warning = FALSE}
 # Filter and prepare data, excluding NA and empty values
 Blood.Status <- Characters %>%
@@ -169,7 +305,7 @@ ggplot(Blood.Status.Percentages, aes(x = House, y = percentage, fill = Blood.Sta
     "Muggle-Born" = "#FFB347",     # Light orange
     "Half-Giant" = "#848482", # Silver
     "Quarter-Veela" = "#87CEEB",
-    "Part-Goblin" = "darkgreen"
+    "Part-Goblin" = "#2F4F4F"
   )) +
   theme_minimal() +
   theme(
@@ -183,6 +319,52 @@ ggplot(Blood.Status.Percentages, aes(x = House, y = percentage, fill = Blood.Sta
 ---
 
 ### Physical Characteristics
+
+```{r}
+# Get overall hair color distribution
+Hair.Overall <- Characters %>%
+  filter(!is.na(Hair.Color) & Hair.Color != "") %>%
+  group_by(Hair.Color) %>%
+  summarise(
+    Count = n(),
+    Percentage = round(n() / nrow(filter(Characters, !is.na(Hair.Color) & Hair.Color != "")) * 100, 1)
+  ) %>%
+  arrange(desc(Percentage))
+
+# Create bar plot
+ggplot(Hair.Overall, aes(x = reorder(Hair.Color, Percentage), y = Percentage, fill = Hair.Color)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.1f%%", Percentage)), 
+            hjust = -0.1) +
+  coord_flip() +
+  labs(title = "Overall Distribution of Hair Colors",
+       x = "Hair Color",
+       y = "Percentage") +
+  scale_fill_manual(values = c(
+    "Black" = "#000000",
+    "Blonde" = "#E0C092",
+    "Brown" = "#72442b",
+    "Red" = "orangered",
+    "Grey" = "#808080",
+    "White" = "#F8EBD5",
+    "Bald" = "pink",
+    "Silver" = "#C0C0C0",
+    "Green" = "#228B22",
+    "Dark" = "#4d2d1a",
+    "Auburn" = "#9a3300",
+    "Variable" = "#800080",
+    "Tawny" = "#cca57d",
+    "Mousy" = "#5c4939"
+  )) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    panel.grid.major.y = element_blank()
+  ) +
+  scale_y_continuous(limits = c(0, max(Hair.Overall$Percentage) * 1.2))
+```
+
+
 ```{r message = FALSE, warning = FALSE}
 # Filter and prepare data for hair color analysis
 Hair.Color.Distribution <- Characters %>%
@@ -220,12 +402,13 @@ ggplot(Hair.Color.Percentages, aes(x = House, y = percentage, fill = Hair.Color)
     "Grey" = "#808080",
     "White" = "#F8EBD5",
     "Bald" = "pink",
-    "Silver" = "lightgray",
-    "Green" = "lightgreen",
+    "Silver" = "#C0C0C0",
+    "Green" = "#228B22",
     "Dark" = "#4d2d1a",
     "Auburn" = "#9a3300",
-    "Variable" = "purple",
-    "Tawny" = "#cca57d"
+    "Variable" = "#800080",
+    "Tawny" = "#cca57d",
+    "Mousy" = "#5c4939"
   )) +
   theme_minimal() +
   theme(
@@ -252,7 +435,7 @@ ggplot(Eye.Color.Distribution, aes(x = reorder(Eye.Color, Percentage), y = Perce
   geom_text(aes(label = sprintf("%.1f%%", Percentage)), 
             hjust = -0.1) +
   coord_flip() +
-  labs(title = "Distribution of Eye Colors",
+  labs(title = "Overall Distribution of Eye Colors",
        x = "Eye Color",
        y = "Percentage") +
   scale_fill_manual(values = c(
@@ -261,14 +444,14 @@ ggplot(Eye.Color.Distribution, aes(x = reorder(Eye.Color, Percentage), y = Perce
     "Green" = "#228B22",
     "Grey" = "#808080",
     "Black" = "#000000",
-    "Dark" = "#2F4F4F",
-    "Hazel" = "#DEB887",
-    "Yellow" = "yellow",
-    "Silver" = "lightgrey",
+    "Dark" = "#4d2d1a",
+    "Hazel" = "#8E7618",
+    "Yellow" = "#FFD700",
+    "Silver" = "#C0C0C0",
     "Scarlet" = "#FF2400",
     "Pale" = "beige",
     "Ruddy" = "#ff0028",
-    "Variable" = "purple",
+    "Variable" = "#800080",
     "Gooseberry" = "#E6EAC0"
   )) +
   theme_minimal() +
@@ -279,9 +462,107 @@ ggplot(Eye.Color.Distribution, aes(x = reorder(Eye.Color, Percentage), y = Perce
   scale_y_continuous(limits = c(0, max(Eye.Color.Distribution$Percentage) * 1.2))
 ```
 
+```{r message=FALSE, warning=FALSE}
+# Filter and prepare data for eye color analysis by house
+Eye.Color.House <- Characters %>%
+  filter(!is.na(House) & House != "" & 
+         !is.na(Eye.Color) & Eye.Color != "") %>%
+  mutate(House = case_when(
+    House == "Beauxbatons Academy of Magic" ~ "Beauxbatons",
+    House == "Durmstrang Institute" ~ "Durmstrang",
+    TRUE ~ House
+  ))
+
+# Calculate percentages
+Eye.Color.House.Percentages <- Eye.Color.House %>%
+  group_by(House, Eye.Color) %>%
+  summarise(count = n()) %>%
+  group_by(House) %>%
+  mutate(percentage = round((count / sum(count)) * 100, 1))
+
+# Create visualization
+ggplot(Eye.Color.House.Percentages, 
+       aes(x = House, y = percentage, fill = Eye.Color)) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_text(aes(label = sprintf("%.1f%%", percentage)), 
+            position = position_stack(vjust = 0.5),
+            size = 3,
+            color = "white") +
+  labs(title = "Eye Color Distribution Across Houses",
+       x = "House",
+       y = "Percentage",
+       fill = "Eye Color") +
+  scale_fill_manual(values = c(
+    "Blue" = "#1E90FF",
+    "Brown" = "#8B4513",
+    "Green" = "#228B22",
+    "Grey" = "#808080",
+    "Black" = "#000000",
+    "Dark" = "#4d2d1a",
+    "Hazel" = "#8E7618",
+    "Yellow" = "#FFD700",
+    "Silver" = "#C0C0C0",
+    "Scarlet" = "#FF2400",
+    "Pale" = "#F5F5DC",
+    "Ruddy" = "#ff0028",
+    "Variable" = "#800080",
+    "Gooseberry" = "#E6EAC0"
+  )) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major = element_line(color = "#E0E0E0"),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+  )
+```
+
 ---
 
 ### Patronus Forms
+
+A Patronus is a powerful defensive charm in the Harry Potter universe that manifests as a bright, silvery-white guardian or protector taking the form of an animal. This advanced magic serves primarily as protection against dark creatures like Dementors and Lethifolds.
+
+Each witch or wizard's Patronus typically takes a unique animal form that reflects their personality.
+
+The incantation "Expecto Patronum" is used to conjure a Patronus, but the spell requires both the incantation and intense focus on a powerful, happy memory to be successful.
+
+```{r}
+# Create House.Patronus dataset by joining Characters table
+House.Patronus <- Characters %>%
+  filter(!is.na(House) & House != "" & !is.na(Patronus) & Patronus != "") %>%
+  mutate(House = case_when(
+    House == "Beauxbatons Academy of Magic" ~ "Beauxbatons",
+    House == "Durmstrang Institute" ~ "Durmstrang",
+    TRUE ~ House
+  ))
+
+# Create scatterplot for House and Patronus distribution
+ggplot(House.Patronus, aes(x = House, y = Patronus)) +
+  geom_point(aes(color = House), 
+             position = position_jitter(width = 0.2, height = 0.2),
+             alpha = 0.6, 
+             size = 3) +
+  labs(title = "Distribution of Patronus Forms by House",
+       x = "House",
+       y = "Patronus Form") +
+  scale_color_manual(values = c(
+    "Gryffindor" = "#740001",
+    "Slytherin" = "#1A472A",
+    "Ravenclaw" = "#0E1A40",
+    "Hufflepuff" = "#FFD800",
+    "Beauxbatons" = "#87CEEB",
+    "Durmstrang" = "#DC143C"
+  )) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right",
+        legend.text = element_text(size = 8))
+```
+
+- **None**: Wizards and witches who cannot produce a Patronus charm
+- **Non-corporeal**: A shield of silver mist rather than a distinct animal form
+
 ```{r}
 # Count frequency of each Patronus form
 Patronus.Count <- Characters %>%
@@ -297,40 +578,12 @@ Patronus.Count <- Characters %>%
 kable(head(Patronus.Count, 10),
       col.names = c("Patronus Form", "Number of Characters", "Percentage"),
       caption = "Top 10 Most Common Patronus Forms") %>%
-  kable_styling(bootstrap_options = c("striped", "hover"))
-```
-
-```{r warning=FALSE}
-# Join Characters table to get house and patronus information
-House.Patronus <- Characters %>%
-  filter(!is.na(House) & House != "" & !is.na(Patronus) & Patronus != "") %>%
-  mutate(House = case_when(
-    House == "Beauxbatons Academy of Magic" ~ "Beauxbatons",
-    House == "Durmstrang Institute" ~ "Durmstrang",
-    TRUE ~ House
-  ))
-
-# Create contingency table
-House.Patronus.Table <- table(House.Patronus$House, House.Patronus$Patronus)
-
-# Perform chi-square test
-ChiTest <- chisq.test(House.Patronus.Table)
-
-# Create visualization
-ggplot(House.Patronus, aes(x = House, fill = Patronus)) +
-  geom_bar(position = "fill") +
-  labs(title = "Distribution of Patronus Forms by House",
-       x = "House",
-       y = "Proportion") +
-  scale_fill_viridis_d() +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.position = "right",
-        legend.text = element_text(size = 8))
+  kable_styling(bootstrap_options = "striped")
 ```
 
 
----
+
+ 
 
 # Dialogue Analysis
 To analyze dialogue patterns across the Harry Potter movie series, we examined the following datasets:
@@ -352,9 +605,7 @@ Key variables analyzed include:
 ### Frequently Used Words
 
 ```{r message=FALSE, warning=FALSE}
-library(RColorBrewer)
-library(tidytext)
-library(wordcloud)
+
 
 # Prepare the data
 word_counts <- Dialogue %>%
@@ -387,17 +638,29 @@ Word.Freq.Table <- Dialogue %>%
 kable(Word.Freq.Table,
       col.names = c("Word", "Frequency", "Percentage"),
       digits = 2) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  kable_styling(bootstrap_options = c("striped", "condensed")) %>%
   row_spec(0, bold = TRUE) %>%
-  column_spec(2:3, width = "100px") %>%
   add_header_above(c(" " = 1, "Word Statistics" = 2))
 ```
 
-
-
 ---
 
+ 
+
 ### Locations with Most Dialogue
+
+These locations serve as essential backdrops for character interactions and plot development throughout the series, each with its own unique atmosphere and significance to the story.
+
+- **Diagon Alley**: main shopping district for wizards in London, featuring essential magical shops like Ollivanders (wands), Gringotts Bank, and the famous Weasleys' Wizard Wheezes joke shop.
+- **Dwellings**: Important residences including the Burrow (Weasley family home), 4 Privet Drive (Harry's childhood home), and 12 Grimmauld Place (Order of the Phoenix headquarters).
+- **Hogsmeade**: The only all-wizard village in Britain, featuring popular establishments like The Three Broomsticks inn, Honeydukes sweet shop, and the supposedly haunted Shrieking Shack.
+- **Hogwarts**: The magical school contains numerous important locations:
+  - Common areas: Great Hall, Library, Hospital Wing
+  - Educational spaces: Various classrooms for Potions, Charms, and Defense Against the Dark Arts
+  - Secret locations: Chamber of Secrets, Room of Requirement
+  - Outdoor areas: Quidditch Pitch, Forbidden Forest, Great Lake
+- **Other Magical Locations**: Various magical places including Platform Nine and Three-Quarters (train station), the Ministry of Magic (government headquarters), and the Knight Bus (magical emergency transport).
+
 ```{r}
 # Count dialogues per location
 Dialogue.Count <- Dialogue %>%
@@ -485,7 +748,6 @@ ggplot(House.Representation,
 # Create summary table of house dialogue representation
 House.Summary <- House.Dialogue %>%
   left_join(Chapters, by = "Chapter.ID") %>%
-  left_join(Movies, by = "Movie.ID") %>%
   group_by(House) %>%
   summarise(
     Total.Lines = n(),
@@ -502,8 +764,23 @@ kable(House.Summary,
 
 
 ---
+ 
 
 ### Golden Trio Dialogue Distribution
+
+**The Golden Trio**: Harry Potter, Ron Weasley, and Hermione Granger - form the central characters of the series.
+
+Their dialogue distribution across the movies reveals interesting patterns in character development and story focus:
+
+- Harry consistently has the highest number of lines throughout the series, reflecting his role as the protagonist
+- Hermione's dialogue peaks noticeably in the films where she has crucial plot-advancing moments
+- Ron's dialogue distribution shows more variation, with stronger presence in the last film (part 1)
+
+Several key observations from the dialogue analysis:
+
+- There's a noticeable shift in dialogue distribution during the later films, especially in the Deathly Hallows parts
+- Individual character arcs are reflected in their dialogue patterns - for example, Hermione's increased prominence during academic challenges and Ron's reduced presence during his temporary departure in Deathly Hallows Part 1
+
 ```{r warning=FALSE, message=FALSE}
 # Analyze dialogue distribution for main characters across movies
 main_char_dialogue <- Dialogue %>%
@@ -512,7 +789,7 @@ main_char_dialogue <- Dialogue %>%
   left_join(Movies, by = "Movie.ID") %>%
   filter(Character.Name %in% c("Harry Potter", "Ron Weasley", "Hermione Granger")) %>%
   group_by(Movie.Title, Character.Name) %>%
-  summarise(Dialogue_Count = n(), .groups = 'drop') %>%
+  summarise(Dialogue_Count = n()) %>%
   mutate(Movie.Short = case_when(
     Movie.Title == "Harry Potter and the Philosopher's Stone" ~ "HP 1",
     Movie.Title == "Harry Potter and the Chamber of Secrets" ~ "HP 2",
@@ -549,11 +826,192 @@ ggplot(main_char_dialogue,
 
 
 
----
+ 
 
 # Spell Analysis
 
+To find spell usage by each character and house we utilize a function 
+to search through every line of dialogue searching for occurrences of spell 
+incantations and then record the which character used the spell and what spell
+they used.
+
+To analyze spell usage throughout the Harry Potter movies we examined the following datasets:
+
+- Dialogue.csv: Contains each line of dialogue and who said it
+
+- Spells.csv: Contains the spell incantations
+
+Key Variables include:
+
+- Individual dialogue lines and the incantations they contain
+
+- Character names 
+
+- House names
+
+- Incantations (e.g. Sectum Sempra, Expelliarmus)
+
 ---
+
+### Spell Finder Function
+
+The SpellFinder function identifies spell incantations in dialogue by:
+
+- Scanning through lines of dialogue to find exact matches of known spell incantations
+- Creating a data frame that pairs each line of dialogue with the spell being cast
+- Handling multiple spells that may appear in the same dialogue
+
+Common spell incantation patterns include:
+
+- **Protection spells**: Often end in "-o" (e.g., "Protego", "Expecto Patronum")
+- **Attack spells**: Frequently begin with "Ex-" (e.g., "Expelliarmus", "Expulso")
+- **Charm spells**: Commonly use Latin-based words (e.g., "Lumos", "Wingardium Leviosa")
+
+The analysis tracks how these spells are used across different characters, chapters, and contexts throughout the series.
+
+```{r, echo=TRUE}
+SpellFinder <- function(dialogueDF, spellsDF) {
+  #Initializes up the matches data frame to hold the 
+  #line of dialogue and spell being used in that line of dialogue.
+  Matches <- data.frame(
+    Dialogue = character(),
+    Spell = character()
+  )
+  #for each spell in the Spells data frame we identify which lines of 
+  #dialogue contain that spell and add those lines of dialogue to the MatchingLines vector.
+  for (spell in spellsDF$Incantation) {
+    MatchingLines <- dialogueDF$Dialogue[str_detect(
+      dialogueDF$Dialogue,spell)]
+      
+#Stores the vector MatchingLines in a temporary data 
+#frame and Labels each dialogue with the spell found in them from this iteration of the loop.
+    MatchesTemp <- data.frame(
+      Dialogue = MatchingLines,
+      Spell = rep(spell, length(MatchingLines))
+    )
+#Once we have a temporary data frame with each of the 
+#lines of dialogue and have labeled them by the 
+#spell used we can add the dialogues with this 
+#iterations spells to a final data frame which will hold 
+#all lines of dialogue with a spell from all iterations at the end of the loop
+      Matches <- rbind(Matches,MatchesTemp)
+      }
+  
+  return(Matches)
+}
+
+```
+
+---
+
+
+### Spell Usage by the Golden Trio
+```{r message = FALSE, warning=FALSE}
+SpellUsage<-inner_join(SpellFinder(Dialogue, Spells),Dialogue) %>% 
+  arrange(Dialogue.ID)
+
+
+SpellsByCharacter<-inner_join(SpellUsage,Characters)
+
+
+
+SpellCountByCharacter<-SpellsByCharacter %>% 
+  group_by(Character.Name, Character.ID, Spell,Chapter.ID) %>% 
+  summarise("NumberofCasts"=n())
+
+
+
+SpellCountByCharacter %>% 
+filter(Character.ID == 1 | Character.ID == 2 | Character.ID == 3) %>% 
+  ggplot(aes(x=Character.Name, y=NumberofCasts, fill=Character.Name))+
+  geom_col()+
+  facet_wrap('Spell')+
+  scale_fill_manual(values=c(
+    "Harry Potter" = "#740001",
+    "Hermione Granger" = "#CD7F32",
+    "Ron Weasley" = "#964B00"
+  ))+
+  theme(
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank()
+  ) +
+  labs(
+    y = "Number of Casts",
+    fill = "Character"
+  )
+```
+
+
+### Spell Frequency Across Movie Series
+```{r, message = FALSE, warning=FALSE}
+SpellCountByChapter<-SpellCountByCharacter %>% 
+  group_by(Spell,Chapter.ID) %>% 
+  summarise('CastsPerChapter'=n())%>%
+  mutate(CumulativeCasts = cumsum(CastsPerChapter)) %>% 
+  group_by(Spell) %>% 
+  filter(sum(CastsPerChapter)>2 && n_distinct(Chapter.ID)>1)
+
+SpellCountByChapter %>% 
+  ggplot(aes(x=Chapter.ID,y=CumulativeCasts))+
+  geom_line()+
+  facet_wrap('Spell')
+```
+
+---
+
+### Spell Frequency by Character
+```{r message = FALSE, warning=FALSE}
+SpellCountByCharacter %>% 
+  ggplot(aes(x=Character.Name, y=Spell, fill = NumberofCasts))+
+  geom_tile()+
+  scale_fill_gradient(low = "orange", high = "blue")+
+  theme(axis.text.y = element_text(size = 6,) ,axis.text.x = element_text(angle = 90, vjust = .5))+
+  labs(title = "Spell Usage Heatmap")
+
+```
+
+### Spell Frequency by House
+```{r message = FALSE, warning=FALSE}
+SpellCountByHouse<-SpellsByCharacter %>% 
+  group_by(House, Spell) %>% 
+  summarise("NumberofCasts"=n()) %>% 
+  mutate(CumulativeCasts = cumsum(NumberofCasts)) %>% 
+  group_by(House) %>% 
+  filter(!is.na(House) & House != "")
+
+
+
+
+SpellCountByHouse %>% 
+ggplot(aes(x=House,y=Spell, fill = NumberofCasts))+
+  geom_tile(height=1)+
+  scale_fill_gradient(low = "orange", high = "blue")+
+  theme(axis.text.y = element_text(size = 8))+
+  labs(title = "Spell Usage Heatmap")
+
+
+  
+```
+
+### Spell Frequency by Gender
+```{r message = FALSE, warning=FALSE}
+SpellCountByGender<-SpellsByCharacter %>% 
+  group_by(Gender, Spell) %>% 
+  summarise("NumberofCasts"=n())
+
+
+
+
+SpellCountByGender  %>% 
+ggplot(aes(x=Gender,y=Spell, fill = NumberofCasts))+
+  geom_tile(height=1)+
+  scale_fill_gradient(low = "orange", high = "blue")+
+  theme(axis.text.y = element_text(size = 8))+
+  labs(title = "Spell Usage Heatmap")
+
+```
+
+
 
 # Wand Analysis
 To analyze wand characteristics and their distribution across the Harry Potter universe, we examined the following datasets:
@@ -562,10 +1020,10 @@ To analyze wand characteristics and their distribution across the Harry Potter u
 
 Key variables analyzed include:
 
-- Wand length (measured in inches)
-- Wand wood type (e.g., Holly, Oak, Vine)
-- Wand core material (e.g., Phoenix feather, Dragon heartstring)
-- Character house affiliation
+- Wand Length (inches)
+- Wand Wood Type (e.g., Holly, Oak, Vine)
+- Wand Core Material (e.g., Phoenix feather, Dragon heartstring)
+- Character House Affiliation
 
 ---
 
@@ -586,8 +1044,10 @@ Wand.House.Count <- Characters %>%
   ) %>%
   arrange(desc(Wand_Count))
 
-# Create bar plot with adjusted text position
-ggplot(Wand.House.Count, aes(x = reorder(House, -Wand_Count), y = Wand_Count, fill = House)) +
+# Plot with adjusted text position
+ggplot(Wand.House.Count, aes(x = reorder(House, -Wand_Count), 
+                             y = Wand_Count, 
+                             fill = House)) +
   geom_bar(stat = "identity") +
   geom_text(aes(label = paste0(Wand_Count, "\n(", Percentage, "%)"), 
             y = Wand_Count + max(Wand_Count) * 0.05), # Position text above bars
@@ -606,17 +1066,18 @@ ggplot(Wand.House.Count, aes(x = reorder(House, -Wand_Count), y = Wand_Count, fi
   )) +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.x = element_text(angle = 45,
+                               hjust = 1),
     legend.position = "none"
   ) +
   # Expand y-axis to make room for labels
   scale_y_continuous(expand = expansion(mult = c(0, 0.2)))
 ```
 
----
+ 
 
 ### Wand Length Distribution by Wood Type and Core
-```{r}
+```{r message=FALSE, warning=FALSE}
 # Create faceted scatter plot for wand characteristics
 Wand.Analysis <- Characters %>%
   filter(!is.na(Wand..Length.) & !is.na(Wand..Core.) & !is.na(Wand..Wood.) & 
@@ -637,11 +1098,38 @@ ggplot(Wand.Analysis, aes(x = Wand..Wood., y = Wand..Length., color = Wand..Core
     strip.text = element_text(size = 8),
     legend.position = "bottom"
   ) +
-  scale_color_brewer(palette = "Set2")
+  scale_color_brewer(palette = "Set2") +
+  scale_y_continuous(limits = c(0, max(Wand.Analysis$Wand..Length.))) # adjusted so y starts at 0
 ```
 
+---
 
+# Analysis Summary
 
+## Problem Statement and Key Insights
 
+This analysis explored the Harry Potter universe through multiple datasets examining wand characteristics, spell usage patterns, and characters across houses and throughout the series. The primary goal was to uncover patterns and relationships in magical elements across different demographic groups.
 
+Key findings include:
+
+- Distinct distribution patterns across houses, showing house-specific preferences in magical implements
+- Correlation patterns between wand woods, cores, and lengths, suggesting certain combinations are more common than others
+- Varied spell usage patterns among the Golden Trio (Harry, Ron, and Hermione), highlighting their different approaches to magic
+- Evolution of spell usage throughout the series, demonstrating how magical complexity increases as the story progresses
+
+## Implications and Limitations
+
+Implications:
+
+- The analysis reveals systematic patterns in magical practice that align with character backgrounds and affiliations
+- Gender differences in spell usage might reflect broader themes about character roles and development in the series
+
+Limitations:
+
+- Data completeness: Not all characters have complete wand or spell information recorded
+- Context limitation: The analysis cannot account for the circumstances or effectiveness of spell usage
+- Characteristic gaps: Some characters in the series have more detailed documentation than others
+- Character development: The analysis may not fully capture how characters' magical abilities evolve over time
+
+These findings provide valuable insights into the structured nature of magic in the Harry Potter universe while acknowledging the constraints of available data and analytical methods.
 
