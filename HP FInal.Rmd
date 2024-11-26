@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Introduction
 
+<img src="https://bizarrebrunette.com/wp-content/uploads/2018/09/hogwarts-gif.gif" class="center"/>
+
 In the realm of fantasy literature and cinema, few franchises have captured the imagination quite like Harry Potter. But beyond the spellbinding narratives lies a wealth of data waiting to be explored. Our analysis aims to uncover the hidden patterns and insights within the Harry Potter movie series, using a comprehensive dataset that spans characters, dialogue, spells, and movie statistics.
 
 The central question we seek to answer is: How do the various elements of the Harry Potter universe interact and evolve throughout the series? To address this, we'll be diving into multiple CSV files, including:
@@ -100,6 +102,8 @@ This analysis explores the characteristics and demographics of different Hogwart
 ---
 
 ### Distribution of Characters Across Hogwarts Houses
+
+<img src="https://i0.wp.com/newyorkcliche.com/wp-content/uploads/2016/05/house-crests-Harry-Potter.jpg?resize=759%2C226">
 
 The main houses and schools in the Harry Potter universe include:
 
@@ -521,6 +525,8 @@ ggplot(Eye.Color.House.Percentages,
 
 ### Patronus Forms
 
+<img src= "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/23e7b6d5-bdba-44ad-8517-cd900563fc2a/df4iv1c-3fc45071-a2d8-4b97-9a43-cff2eb73c75f.gif?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzIzZTdiNmQ1LWJkYmEtNDRhZC04NTE3LWNkOTAwNTYzZmMyYVwvZGY0aXYxYy0zZmM0NTA3MS1hMmQ4LTRiOTctOWE0My1jZmYyZWI3M2M3NWYuZ2lmIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.xVZzm_43UheTPP0oKzicoCNLp_cEX1MHWKoR5pr28zQ"/>
+
 A Patronus is a powerful defensive charm in the Harry Potter universe that manifests as a bright, silvery-white guardian or protector taking the form of an animal. This advanced magic serves primarily as protection against dark creatures like Dementors and Lethifolds.
 
 Each witch or wizard's Patronus typically takes a unique animal form that reflects their personality.
@@ -861,12 +867,6 @@ The SpellFinder function identifies spell incantations in dialogue by:
 - Creating a data frame that pairs each line of dialogue with the spell being cast
 - Handling multiple spells that may appear in the same dialogue
 
-Common spell incantation patterns include:
-
-- **Protection spells**: Often end in "-o" (e.g., "Protego", "Expecto Patronum")
-- **Attack spells**: Frequently begin with "Ex-" (e.g., "Expelliarmus", "Expulso")
-- **Charm spells**: Commonly use Latin-based words (e.g., "Lumos", "Wingardium Leviosa")
-
 The analysis tracks how these spells are used across different characters, chapters, and contexts throughout the series.
 
 ```{r, echo=TRUE}
@@ -906,6 +906,7 @@ SpellFinder <- function(dialogueDF, spellsDF) {
 
 
 ### Spell Usage by the Golden Trio
+
 ```{r message = FALSE, warning=FALSE}
 SpellUsage<-inner_join(SpellFinder(Dialogue, Spells),Dialogue) %>% 
   arrange(Dialogue.ID)
@@ -941,6 +942,7 @@ filter(Character.ID == 1 | Character.ID == 2 | Character.ID == 3) %>%
   )
 ```
 
+---
 
 ### Spell Frequency Across Movie Series
 ```{r, message = FALSE, warning=FALSE}
@@ -956,8 +958,6 @@ SpellCountByChapter %>%
   geom_line()+
   facet_wrap('Spell')
 ```
-
----
 
 ### Spell Frequency by Character
 ```{r message = FALSE, warning=FALSE}
@@ -1126,10 +1126,6 @@ Implications:
 
 Limitations:
 
-- Data completeness: Not all characters have complete wand or spell information recorded
-- Context limitation: The analysis cannot account for the circumstances or effectiveness of spell usage
-- Characteristic gaps: Some characters in the series have more detailed documentation than others
-- Character development: The analysis may not fully capture how characters' magical abilities evolve over time
-
-These findings provide valuable insights into the structured nature of magic in the Harry Potter universe while acknowledging the constraints of available data and analytical methods.
+- Data completeness: Some characters in the series have more detailed documentation than others
+- Context limitation: The analysis cannot account for application of spells (mention vs incantation)
 
